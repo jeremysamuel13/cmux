@@ -56,7 +56,10 @@ import Testing
         #expect(tab.kind == .conversation)
         #expect(tab.page == InternalPageID.settings.rawValue)
         #expect(ProvisionalTab.isProvisional(tab.id), "the tab shows before the store answers")
-        #expect(services.pages.keys(of: .settings).isEmpty, "no app-only page tab")
+        #expect(services.pages.tabIDs(in: pane.paneKey).isEmpty, "no app-only page tab")
+        // The provisional tab shows synchronously; `new-conversation-tab` goes out from the
+        // creation task, which runs on the next main-actor turn: wait for that request.
+        try await Self.waitUntil("new-conversation-tab is sent for the page") { !creations.requests.isEmpty }
         #expect(creations.requests.map(\.page) == [InternalPageID.settings.rawValue])
         #expect(creations.requests.map(\.pane) == [pane.pane.handle])
         #expect(pane.stripModel.selectedID?.rawValue == tab.id, "a user run selects it")

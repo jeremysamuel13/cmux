@@ -25,6 +25,8 @@ public final class TerminalSurfaceView: NSView {
     /// Serial lane for output and other process_output-ordered calls.
     private(set) var lane: TerminalOutputLane?
     weak var session: TerminalSession?
+    /// Ghostty moved the viewport or the scrollback grew (the host's ``TerminalScroller``).
+    var onScrollbar: ((TerminalScrollbar) -> Void)?
 
     /// Which grid the surface renders and reports (``TerminalGridPolicy``):
     /// the PTY owner's announced grid once there is one; the view's grid is

@@ -59,6 +59,7 @@ extension TerminalSurfaceView {
             model.backgroundOverride = NSColor(srgbRed: CGFloat(red) / 255, green: CGFloat(green) / 255, blue: CGFloat(blue) / 255, alpha: 1)
         case .scrollbar(let scrollbar):
             model.scrollbar = scrollbar
+            onScrollbar?(scrollbar)
             // Output or a mouse scroll moved the viewport under the cursor box.
             copyMode.syncCursor()
         case .startSearch(let needle):

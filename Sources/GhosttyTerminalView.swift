@@ -877,11 +877,17 @@ class GhosttyApp {
         }
         runtimeConfig.write_clipboard_cb = { userdata, location, content, len, _ in
             // Manual-I/O surfaces are remote terminal projections (SSH/tmux/Cloud).
-            // OSC 52 from them is remote-origin input and must never overwrite this
-            // Mac's clipboard without a user gesture or confirmation.
+            // OSC 52 from them is remote-origin input and must not overwrite this
+            // Mac's clipboard without a user gesture or confirmation, unless the
+            // surface's host is listed in `terminal.trustedClipboardWriteHosts`.
             guard let callbackContext = GhosttyApp.callbackContext(from: userdata),
                   let terminalSurface = callbackContext.terminalSurface,
-                  terminalSurface.allowsAutomaticClipboardWrite,
+                  terminalSurface.allowsClipboardWrite(
+                      trust: TerminalRemoteClipboardWriteTrust(
+                          newlineSeparated: TerminalCatalogSection()
+                              .trustedClipboardWriteHosts.value(in: .standard)
+                      )
+                  ),
                   let content = content, len > 0 else { return }
             let buffer = UnsafeBufferPointer(start: content, count: Int(len))
             let decoder = TerminalClipboardRepresentationDecoder()

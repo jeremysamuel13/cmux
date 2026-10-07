@@ -66,6 +66,7 @@ extension CmuxSettingsFileStore {
         "terminal.showCopyConfirmation",
         "terminal.reflowHardWrapOnCopy",
         "terminal.confirmUnsafePaste",
+        "terminal.trustedClipboardWriteHosts",
         "terminal.textEditingGestures",
         "terminal.textEditingCommandMovesByWord",
         "terminal.textEditingGesturesInFullScreenApps",

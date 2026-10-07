@@ -32,6 +32,20 @@ enum RemoteTuiMachine: Sendable {
     var capabilities: VMCapabilities {
         cloudSummary?.capabilities ?? VMCapabilities(snapshot: false, restore: false, fork: false, exec: true, stats: false, ports: true, desktop: false, sizing: false, persistentHome: true, attachTransports: ["ssh"])
     }
+    /// The SSH hosts a `terminal.trustedClipboardWriteHosts` pattern may match
+    /// for this machine: the destination and, for a brokered connection, the
+    /// `HostName` it reaches. Empty for Cloud machines, which have their own
+    /// clipboard writer path.
+    var clipboardTrustHosts: [String] {
+        switch self {
+        case .cloud: return []
+        case .ssh(let connection):
+            return TerminalUploadCommand.hostsForMatching(
+                connection.configuration.destination,
+                sshOptions: connection.configuration.sshOptions
+            )
+        }
+    }
     var defaultTerminalCommand: [String] {
         switch self {
         case .cloud: return CloudTuiCommandLine.defaultTerminalCommand

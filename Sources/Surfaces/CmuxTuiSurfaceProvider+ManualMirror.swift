@@ -126,6 +126,7 @@ extension CmuxTuiSurfaceProvider {
                     allowsRemoteClipboardWrites: machine.cloudMachineID != nil
                 )
             }
+            created.surface.setRemoteHosts(summary.clipboardTrustHosts)
             session.bind(surface: created.surface)
             // Keep Cloud input convergence on the panel. Workspace transfer
             // rebinds the ordinary terminal callback, while this hook resolves

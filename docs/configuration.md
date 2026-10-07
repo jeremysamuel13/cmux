@@ -132,6 +132,48 @@ Values: `right`, `left`, `top`, `bottom`, `newTab`, `newWorkspace`.
 
 Default: `right`.
 
+## `terminal.trustedClipboardWriteHosts`
+
+Hosts whose programs may set this Mac's clipboard from a remote terminal. A remote
+terminal is a `cmux ssh` pane or a `cmux ssh-tmux` mirror pane. Programs there copy
+with the OSC 52 escape sequence; agent TUIs such as OpenCode, Codex, and Claude
+Code do this when you drag-select inside them, because they capture the mouse and
+have no other route to your clipboard from a remote host.
+
+```json
+{
+  "terminal": {
+    "trustedClipboardWriteHosts": ["dev-box", "*.corp.example.com"]
+  }
+}
+```
+
+Each entry is an `ssh_config`-style `Host` glob (`*`, `?`; no pattern lists or `!`
+negation), matched against the pane's SSH destination with `user@` and IPv6
+brackets stripped and lowercased. When the connection carries a `HostName` ssh
+option (for example a connection through a ProxyCommand broker dialled as
+`localhost`), the resolved host is matched too, so a pattern written against
+either the alias or the real host works. This is the same matching
+`terminal.uploadCommands` uses.
+
+Default: `[]`. cmux ignores OSC 52 writes from remote terminals, because anything
+printed on the host, including output from a command you did not expect, could
+otherwise replace your clipboard without a gesture from you. List only hosts you
+trust as much as this Mac; `"*"` trusts every remote host.
+
+What the setting does not change:
+
+- Local terminals accept OSC 52 writes as before.
+- OSC 52 clipboard reads stay denied for every terminal.
+- A native selection in a remote pane (Shift+drag when the program captures the
+  mouse, then Cmd+C) copies without this setting.
+
+Inside tmux, the program's OSC 52 write has to reach the pane output cmux reads.
+A `cmux ssh-tmux` mirror reads the pane's raw output, so no tmux option is
+needed. For tmux attached inside a `cmux ssh` pane, set `set -g set-clipboard on`
+in the remote `tmux.conf`, and `set -g allow-passthrough on` when the program
+wraps the write in tmux passthrough.
+
 ## `terminal.agentHibernation`
 
 Routine Agent Hibernation is opt-in. cmux hibernates idle background agent

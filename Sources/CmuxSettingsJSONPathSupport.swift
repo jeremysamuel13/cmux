@@ -360,6 +360,14 @@ enum TerminalSettingsFileMapping {
             invalidPath: terminal.textEditingGesturesInFullScreenApps.id
         ),
     ]
+
+    static let stringArraySettings: [SettingsFileStringArrayMapping] = [
+        .init(
+            jsonKey: "trustedClipboardWriteHosts",
+            defaultsKey: terminal.trustedClipboardWriteHosts.userDefaultsKey,
+            invalidPath: terminal.trustedClipboardWriteHosts.id
+        ),
+    ]
 }
 
 enum SidebarSettingsFileMapping {

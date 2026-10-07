@@ -70,6 +70,18 @@ public struct TerminalCatalogSection: SettingCatalogSection {
         userDefaultsKey: "terminal.confirmUnsafePaste"
     )
 
+    /// `ssh_config`-style host globs for remote terminals (`cmux ssh` and
+    /// `cmux ssh-tmux` mirror panes) whose OSC 52 clipboard writes may set
+    /// this Mac's clipboard. Stored newline-joined, like the browser host
+    /// lists. Empty by default: remote output is untrusted and must not
+    /// overwrite the clipboard without a gesture. Local terminals and Cloud
+    /// writer shims are unaffected; OSC 52 clipboard reads stay denied.
+    public let trustedClipboardWriteHosts = DefaultsKey<String>(
+        id: "terminal.trustedClipboardWriteHosts",
+        defaultValue: "",
+        userDefaultsKey: "terminal.trustedClipboardWriteHosts"
+    )
+
     /// Whether macOS text-editing gestures are replayed as their line-editor
     /// equivalents: Command and Option arrow motion, and the Command and Option
     /// deletion chords. Off by default, because the mode claims chords the

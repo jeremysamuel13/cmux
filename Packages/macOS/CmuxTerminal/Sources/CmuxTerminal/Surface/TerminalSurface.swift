@@ -230,6 +230,26 @@ public final class TerminalSurface: Identifiable, ObservableObject {
     /// Cloud-only permission for guest clipboard writer shims. Clipboard reads
     /// remain denied by the runtime policy regardless of this flag.
     public let allowsRemoteClipboardWrites: Bool
+    /// The SSH hosts this surface's output comes from: the connection's
+    /// destination and, when known, its resolved `HostName`. Empty for local
+    /// terminals and Cloud machines. Read by the clipboard write gate to apply
+    /// `terminal.trustedClipboardWriteHosts`; see
+    /// ``allowsClipboardWrite(trust:)``.
+    public private(set) var remoteHosts: [String]
+    /// Records the SSH hosts for a remote surface whose connection is resolved
+    /// after the surface exists (a reserved pane adopted by a provider).
+    @MainActor
+    public func setRemoteHosts(_ hosts: [String]) {
+        remoteHosts = hosts
+    }
+    /// Whether an OSC 52 write from this surface may publish into the local
+    /// clipboard. Local exec surfaces and Cloud writer shims are allowed as
+    /// before; a remote surface is allowed only when one of its
+    /// ``remoteHosts`` matches `trust`, the user's
+    /// `terminal.trustedClipboardWriteHosts`.
+    public func allowsClipboardWrite(trust: TerminalRemoteClipboardWriteTrust) -> Bool {
+        allowsAutomaticClipboardWrite || trust.trusts(hosts: remoteHosts)
+    }
     /// Ordered input from the manual transport (literal bytes or named keys).
     let manualInputHandler: (@Sendable (TerminalManualInput) -> Void)?
     /// Resolves physical keys that the manual transport should encode itself.
@@ -595,6 +615,7 @@ public final class TerminalSurface: Identifiable, ObservableObject {
         ioMode: TerminalSurfaceIOMode = .exec,
         isRemoteTerminal: Bool = false,
         allowsRemoteClipboardWrites: Bool = false,
+        remoteHosts: [String] = [],
         manualInputHandler: (@Sendable (TerminalManualInput) -> Void)? = nil,
         manualInputKeyNameResolver: (@MainActor @Sendable (ghostty_input_key_s) -> String?)? = nil,
         runtimeSpawnPolicy: TerminalSurfaceRuntimeSpawnPolicy = .immediate,
@@ -634,6 +655,7 @@ public final class TerminalSurface: Identifiable, ObservableObject {
         self.ioMode = ioMode
         self.isRemoteTerminal = isRemoteTerminal
         self.allowsRemoteClipboardWrites = allowsRemoteClipboardWrites
+        self.remoteHosts = remoteHosts
         self.manualInputHandler = manualInputHandler
         self.manualInputKeyNameResolver = manualInputKeyNameResolver
         self.registry = dependencies.registry

@@ -941,6 +941,14 @@ enum CmuxEmbeddedConfigSchema {
           "default": false,
           "description": "When true, a paste that Ghostty's clipboard-paste-protection flags as unsafe (for example, text with a line break going to a program that has not enabled bracketed paste) waits for confirmation in a sheet attached to the terminal's window. When false, cmux pastes it without asking. OSC 52 clipboard reads are not affected."
         },
+        "trustedClipboardWriteHosts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "ssh_config-style host globs (`*`, `?`) for remote terminals whose OSC 52 clipboard writes may set this Mac's clipboard. Matched against the SSH destination of a `cmux ssh` or `cmux ssh-tmux` pane (`user@` and IPv6 brackets stripped, then lowercased) and, when the connection carries a `HostName` ssh option, the resolved host too, like `terminal.uploadCommands.hostPattern`. Lets a program on a trusted host, such as an agent TUI copying its own mouse selection, reach your clipboard. Empty by default: cmux ignores OSC 52 writes from remote terminals, because remote output could otherwise replace your clipboard without a gesture. Local terminals are not affected, and OSC 52 clipboard reads stay denied for every terminal."
+        },
         "textEditingGestures": {
           "type": "boolean",
           "default": false,

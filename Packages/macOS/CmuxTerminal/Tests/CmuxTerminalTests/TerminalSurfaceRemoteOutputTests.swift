@@ -3,6 +3,7 @@ import Foundation
 import GhosttyKit
 import Testing
 @testable import CmuxTerminal
+import CmuxTerminalCore
 
 @_silgen_name("cmux_test_ghostty_process_output_blocking_begin")
 private func beginBlockingProcessOutput(_ surface: ghostty_surface_t)
@@ -199,11 +200,54 @@ struct TerminalSurfaceRemoteOutputTests {
         #expect(cloud.allowsAutomaticClipboardWrite)
     }
 
+    @Test
+    @MainActor
+    func trustedHostsUnblockClipboardWritesOnlyForMatchingRemoteSurfaces() {
+        let noTrust = TerminalRemoteClipboardWriteTrust(hostPatterns: [])
+        let devBoxTrust = TerminalRemoteClipboardWriteTrust(hostPatterns: ["dev-box"])
+
+        let local = makeSurface(runtimeSurfaceBits: UInt(bitPattern: UnsafeMutableRawPointer.allocate(byteCount: 8, alignment: 8)))
+        defer { local.surface!.deallocate() }
+        #expect(local.allowsClipboardWrite(trust: noTrust))
+
+        let tmuxMirror = makeSurface(
+            runtimeSurfaceBits: UInt(bitPattern: UnsafeMutableRawPointer.allocate(byteCount: 8, alignment: 8)),
+            ioMode: .manualMirror,
+            remoteHosts: ["alice@dev-box"]
+        )
+        defer { tmuxMirror.surface!.deallocate() }
+        #expect(!tmuxMirror.allowsAutomaticClipboardWrite)
+        #expect(!tmuxMirror.allowsClipboardWrite(trust: noTrust))
+        #expect(tmuxMirror.allowsClipboardWrite(trust: devBoxTrust))
+
+        let otherMirror = makeSurface(
+            runtimeSurfaceBits: UInt(bitPattern: UnsafeMutableRawPointer.allocate(byteCount: 8, alignment: 8)),
+            ioMode: .manualMirror,
+            remoteHosts: ["other-box"]
+        )
+        defer { otherMirror.surface!.deallocate() }
+        #expect(!otherMirror.allowsClipboardWrite(trust: devBoxTrust))
+
+        let unknownHostMirror = makeSurface(
+            runtimeSurfaceBits: UInt(bitPattern: UnsafeMutableRawPointer.allocate(byteCount: 8, alignment: 8)),
+            ioMode: .manualMirror
+        )
+        defer { unknownHostMirror.surface!.deallocate() }
+        #expect(
+            !unknownHostMirror.allowsClipboardWrite(trust: TerminalRemoteClipboardWriteTrust(hostPatterns: ["*"])),
+            "a remote surface with no known host never matches, even a catch-all"
+        )
+        unknownHostMirror.setRemoteHosts(["dev-box"])
+        #expect(unknownHostMirror.allowsClipboardWrite(trust: devBoxTrust))
+    }
+
     @MainActor
     private func makeSurface(
         runtimeSurfaceBits: UInt,
+        ioMode: TerminalSurfaceIOMode = .exec,
         isRemoteTerminal: Bool = false,
-        allowsRemoteClipboardWrites: Bool = false
+        allowsRemoteClipboardWrites: Bool = false,
+        remoteHosts: [String] = []
     ) -> TerminalSurface {
         let runtimeSurface = UnsafeMutableRawPointer(bitPattern: runtimeSurfaceBits)!
         let nativeView = FakeTerminalSurfaceNativeView(
@@ -215,8 +259,10 @@ struct TerminalSurfaceRemoteOutputTests {
             tabId: UUID(),
             context: GHOSTTY_SURFACE_CONTEXT_SPLIT,
             configTemplate: nil,
+            ioMode: ioMode,
             isRemoteTerminal: isRemoteTerminal,
             allowsRemoteClipboardWrites: allowsRemoteClipboardWrites,
+            remoteHosts: remoteHosts,
             dependencies: TerminalSurfaceRuntimeDependencies(
                 registry: registry,
                 engine: FakeTerminalEngine(),
